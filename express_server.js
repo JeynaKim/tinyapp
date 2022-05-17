@@ -8,12 +8,12 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.set("view engine", "ejs");
 
 function generateRandomString() {
-  let result = Math.random().toString(36).slice(2,8);
+  let result = Math.random().toString(36).slice(2, 8);
   return result;
 }
 
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
+  b2xVn2: "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com",
 };
 
@@ -27,7 +27,6 @@ app.post("/urls", (req, res) => {
   urlDatabase[shortURL] = req.body.longURL;
   res.redirect(`/urls/${shortURL}`);
 });
-
 
 app.get("/urls/new", (req, res) => {
   res.render("urls_new");
