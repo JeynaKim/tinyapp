@@ -9,10 +9,11 @@
       <div class="navbar-nav">
         <a class="nav-item nav-link" href="/urls">My URLs</a>
         <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
-        <a class="nav-item nav-link" href="/urls/new">Login</a>
+        <a class="nav-item nav-link" href="/login">Login</a>
+        <a class="nav-item nav-link" href="/register">Register</a>
       </div>
       <div class="navbar-nav ml-auto">
-        
+        <% console.log(user) %>
         <% if(!user.email){ %>
         <form class="form-inline" method="POST" action="/login">
           <input class="form-control" type="text" name="user_id" placeholder="Username"
