@@ -13,15 +13,15 @@
       </div>
       <div class="navbar-nav ml-auto">
         
-        <% if(!username){ %>
+        <% if(!user.email){ %>
         <form class="form-inline" method="POST" action="/login">
-          <input class="form-control" type="text" name="username" placeholder="Username"
+          <input class="form-control" type="text" name="user_id" placeholder="Username"
           style="width: 300px; margin: 1em">
           <button type="submit" class="btn btn-outline-dark">LOGIN</button>
         </form>
         <% } else { %>
           <form class="form-inline" method="POST" action="/logout">
-          <label>loged in as:<%=username%></label>
+          <label>loged in as:<%=user.email%></label>
           <button type="submit" class="btn btn-outline-dark">LOGOUT</button>
         </form>
       <% }%>
