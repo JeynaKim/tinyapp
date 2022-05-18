@@ -3,28 +3,28 @@ const app = express();
 const PORT = 8080;
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
-const res = require('express/lib/response');
+const res = require("express/lib/response");
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.set("view engine", "ejs");
 
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
+  b2xVn2: "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com",
 };
 
 const users = {
-  "userRandomID": {
+  userRandomID: {
     id: "userRandomID",
     email: "user@example.com",
-    password: "purple-monkey-dinosaur"
+    password: "purple-monkey-dinosaur",
   },
-  "user2RandomID": {
+  user2RandomID: {
     id: "user2RandomID",
     email: "user2@example.com",
-    password: "dishwasher-funk"
-  }
+    password: "dishwasher-funk",
+  },
 };
 
 function generateRandomString() {
@@ -50,7 +50,6 @@ passwordMatchChecks = (email, password) => {
   return false;
 };
 
-  
 app.get("/urls", (req, res) => {
   const user_id = req.cookies["user_id"];
   const user = users[user_id] || {};
@@ -62,12 +61,11 @@ app.post("/urls", (req, res) => {
   if (req.cookies.user_id) {
     const shortURL = generateRandomString();
     urlDatabase[shortURL] = req.body.longURL;
-    res.redirect(`/urls/${shortURL}`)
+    res.redirect(`/urls/${shortURL}`);
   } else {
-    res.send('request not success', 400);
+    res.send("request not success", 400);
   }
 });
-  
 
 app.get("/urls/new", (req, res) => {
   const user_id = req.cookies["user_id"];
@@ -107,10 +105,10 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  if (req.body.email === "" || req.body.password === "") {
-    res.send("Please check if all of your user information are filled", 400)
-  } else if (emailChecks(req.body.email)) {
-    res.send("This email is already registered in our system", 400);
+  if (!emailChecks(req.body.email)) {
+    res.send("e-mail cannot be found");
+  } else if (!passwordMatchChecks(req.body.email, req.body.password)) {
+    res.send("Your password doesn't match with your Id", 403)
   } else {
     const user_id = req.body.user_id;
     res.cookie("user_id", user_id);
@@ -124,34 +122,30 @@ app.post("/logout", (req, res) => {
   res.redirect("/urls");
 });
 
-
 app.get("/register", (req, res) => {
   res.render("urls_registration", { errors: false });
 });
 
 app.post("/register", (req, res) => {
   if (req.body.email === "" || req.body.password === "") {
-    res.send("Please check if all of your user information are filled", 400)
+    res.send("Please check if all of your user information are filled", 400);
   } else if (emailChecks(req.body.email)) {
     res.send("This email is already registered in our system", 400);
   } else {
     const newuser = {
       id: generateRandomString(),
       email: req.body.email,
-      password: req.body.password
-    }
-    users[newuser.id] = newuser
+      password: req.body.password,
+    };
+    users[newuser.id] = newuser;
     res.cookie("user_id", newuser.id);
     res.redirect("/urls");
   }
 });
 
-
 app.get("/login", (req, res) => {
   res.render("login_form", { errors: false });
 });
-
-
 
 app.get("/", (req, res) => {
   res.send("Hello!");
@@ -164,4 +158,3 @@ app.get("/urls.json", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
-
