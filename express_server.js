@@ -3,6 +3,7 @@ const app = express();
 const PORT = 8080;
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
+const res = require('express/lib/response');
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -30,6 +31,25 @@ function generateRandomString() {
   let result = Math.random().toString(36).slice(2, 8);
   return result;
 }
+
+emailChecks = (email) => {
+  for (let user in users) {
+    if (users[user].email === email) {
+      return true;
+    }
+  }
+  return false;
+};
+
+passwordMatchChecks = (email, password) => {
+  for (let user in users) {
+    if (users[user].email === email && users[user].password === password) {
+      return true;
+    }
+  }
+  return false;
+};
+
   
 app.get("/urls", (req, res) => {
   const user_id = req.cookies["user_id"];
@@ -39,10 +59,15 @@ app.get("/urls", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
-  const shortURL = generateRandomString();
-  urlDatabase[shortURL] = req.body.longURL;
-  res.redirect(`/urls/${shortURL}`);
+  if (req.cookies.user_id) {
+    const shortURL = generateRandomString();
+    urlDatabase[shortURL] = req.body.longURL;
+    res.redirect(`/urls/${shortURL}`)
+  } else {
+    res.send('request not success', 400);
+  }
 });
+  
 
 app.get("/urls/new", (req, res) => {
   const user_id = req.cookies["user_id"];
@@ -87,8 +112,8 @@ app.post("/login", (req, res) => {
 });
 
 app.post("/logout", (req, res) => {
-  const username = req.body.username;
-  res.clearCookie("username", username);
+  const user_id = req.body.user_id;
+  res.clearCookie("user_id", user_id);
   res.redirect("/urls");
 });
 
@@ -98,14 +123,20 @@ app.get("/register", (req, res) => {
 });
 
 app.post("/register", (req, res) => {
-  const newuser = {
-    id: generateRandomString(),
-    email: req.body.email,
-    password: req.body.password
+  if (req.body.email === "" || req.body.password === "") {
+    res.send("Please check if all of your user information are filled", 400)
+  } else if (emailChecks(req.body.email)) {
+    res.send("This email is already registered in our system", 400);
+  } else {
+    const newuser = {
+      id: generateRandomString(),
+      email: req.body.email,
+      password: req.body.password
+    }
+    users[newuser.id] = newuser
+    res.cookie("user_id", newuser.id);
+    res.redirect("/urls");
   }
-  users[newuser.id] = newuser
-  res.cookie("user_id", newuser.id);
-  res.redirect("/urls");
 });
 
 app.get("/", (req, res) => {
