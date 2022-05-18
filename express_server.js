@@ -71,6 +71,7 @@ app.post("/urls", (req, res) => {
 
 app.get("/urls/new", (req, res) => {
   const user_id = req.cookies["user_id"];
+  console.log(user_id);
   const user = users[user_id];
   const templateVars = { user };
   res.render("urls_new", templateVars);
@@ -106,9 +107,15 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  const user_id = req.body.user_id;
-  res.cookie("user_id", user_id );
-  res.redirect("/urls");
+  if (req.body.email === "" || req.body.password === "") {
+    res.send("Please check if all of your user information are filled", 400)
+  } else if (emailChecks(req.body.email)) {
+    res.send("This email is already registered in our system", 400);
+  } else {
+    const user_id = req.body.user_id;
+    res.cookie("user_id", user_id);
+    res.redirect("/urls");
+  }
 });
 
 app.post("/logout", (req, res) => {
@@ -138,6 +145,13 @@ app.post("/register", (req, res) => {
     res.redirect("/urls");
   }
 });
+
+
+app.get("/login", (req, res) => {
+  res.render("login_form", { errors: false });
+});
+
+
 
 app.get("/", (req, res) => {
   res.send("Hello!");
