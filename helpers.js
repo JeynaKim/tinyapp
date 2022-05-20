@@ -10,14 +10,5 @@ function getUserByEmail(email, database) {
   }
   return undefined;
 }
-
-function userOwnUrl(urlDatabase, userId) {
-  for (let key of Object.key(urlDatabase)) {
-    if (urlDatabase[key].userID === userId) {
-      return true;
-    }
-  }
-  return false;
-}
   
 module.exports = { getUserByEmail };
