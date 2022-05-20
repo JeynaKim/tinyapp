@@ -26,11 +26,6 @@ const users = {
     email: "user2@example.com",
     password: "dishwasher-funk",
   },
-  usID: {
-    id: "usID",
-    email: "1",
-    password: "$2a$10$oe6JxGvGmu4oyStUYct3g.de9svhTMLVNAI5SLhrdsQwefjuuL7Hy",
-  },
 };
 
 module.exports = {urlDatabase, users};
