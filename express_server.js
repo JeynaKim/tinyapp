@@ -14,6 +14,7 @@ app.use(cookieParser());
 app.use(cookieSession({
   name: "session",
   keys: ["secret-keys-1", "secret-keys-2"],
+  maxAge: 24 * 60 * 60 * 1000 // 24 hours
   })
 );
 
@@ -94,7 +95,7 @@ urlsForUser = (urlDatabase, id) => {
   return filteredUrls;
 };
 
-// Function -> 
+// Function -> gets email and user's info, if found return datas
 function getUserByEmail(email, users) {
   for (let key of Object.keys(users)) {
     let userObj = users[key];
@@ -112,22 +113,22 @@ app.get("/", (req, res) => {
 
 // GET Request -> to see the /urls path
 app.get("/urls", (req, res) => {
-  const user_id = req.cookies["user_id"];
+  const user_id = req.session.user_id;
   if (!user_id) {
     return res.render("urls_errors", {
-      message: "Please Register or Login",
+      message: "❗️ Already Registered? Click bloew to Login ❗️ If Not, Please Sign-Up First!",
       user: null,
     });
   }
-  const user = users[user_id] || {};
-  const getURL = urlsForUser(urlDatabase, user_id);
+  const user = req.session.user_id || {};
+  const getURL = urlsForUser(urlDatabase, req.session.user_id);
   const templateVars = { urls: getURL, user: user };
   res.render("urls_index", templateVars);
 });
 
 // POST Request -> after user submitts a new URL
 app.post("/urls", (req, res) => {
-  const user_id = req.cookies["user_id"] || {};
+  const user_id = req.session.user_id || {};
   if (!user_id) {
     return res.render("urls_errors", {
       message: "Please Register or Login",
@@ -137,15 +138,15 @@ app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
   urlDatabase[shortURL] = {
     longURL: req.body.longURL,
-    userID: req.cookies["user_id"],
+    userID: req.session.urser_id,
   };
   res.redirect(`/urls/${shortURL}`);
 });
 
 // GET Request -> to view new URL form (after user submitts a new URL)
 app.get("/urls/new", (req, res) => {
-  const user_id = req.cookies["user_id"];
-  if (req.cookies["user_id"] === undefined) {
+  const user_id = req.session.user_id;
+  if (user_id === undefined) {
     res.redirect("/login"); // if user is not logged in: redirects to the /login page
     return;
   }
@@ -156,22 +157,24 @@ app.get("/urls/new", (req, res) => {
 
 // GET Request -> to view new urls_show page
 app.get("/urls/:shortURL", (req, res) => {
-  const user_id = req.cookies["user_id"];
-  const user = users[user_id];
-  if (user == undefined) {
-    res.redirect("/register");
-    return;
+  const user_id = req.session.user_id;
+  const shortURL = req.params.id;
+  if (urlDatabase[shortURL] === undefined) {
+    return res.status(400).send("URL not found")
+  }
+  if (user_id === undefined) {
+    user_id = "error";
   }
   const templateVars = {
-    shortURL: req.params.shortURL,
-    longURL: urlDatabase[req.params.shortURL].longURL,
-    user,
+    shortURL: req.params.id,
+    longURL: urlDatabase[req.params.id].longURL,
+    user_id: users[user_id],
   };
   res.render("urls_show", templateVars);
 });
 
 // GET Request -> to redirect to longURL page
-app.get("/u/:shortURL", (req, res) => {
+app.get("/u/:id", (req, res) => {
   if (!emailChecks(req.body.email)) { // If URL for the given ID does not exist: returns error message
     res.send("e-mail cannot be found");
   }
@@ -180,7 +183,7 @@ app.get("/u/:shortURL", (req, res) => {
 });
 
 // POST Request -> to submit editted version of the longURL
-app.post("/urls/:shortURL", (req, res) => {
+app.post("/urls/:id", (req, res) => {
   const user_id = req.cookies["user_id"];
   if (user_id === undefined) {
     res.redirect("/register");
@@ -193,7 +196,7 @@ app.post("/urls/:shortURL", (req, res) => {
 });
 
 // POST Request -> to delete existing URL information from the database
-app.post("/urls/:shortURL/delete", (req, res) => {
+app.post("/urls/:id/delete", (req, res) => {
   const user_id = req.cookies["user_id"];
   const user = users[user_id] || {};
   const filteredData = urlsForUser(urlDatabase, user_id);
@@ -213,7 +216,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 
 // GET Request -> to view registration page if the user is not logged in
 app.get("/register", (req, res) => {
-  const user_id = req.cookies["user_id"];
+  const user_id = req.session.user_id;
   const templateVars = { user: users[user_id] };
   res.render("urls_registration", templateVars);
 });
@@ -221,9 +224,9 @@ app.get("/register", (req, res) => {
 // GET Post -> to submit registered user information
 app.post("/register", (req, res) => {
   if (req.body.email === "" || req.body.password === "") {
-    res.send("Please check if all of your user information are filled", 400);
+    res.status(400).send("Please check if all of your user information are filled");
   } else if (emailChecks(req.body.email)) {
-    res.send("This email is already registered in our system", 400);
+    res.status(400).send("This email is already registered in our system");
   } else {
     const hashedPassword = bcrypt.hashSync(req.body.password, 10);
     const newuser = {
@@ -231,16 +234,14 @@ app.post("/register", (req, res) => {
       email: req.body.email,
       password: hashedPassword,
     };
-    users[newuser.id] = newuser;
-    console.log(users);
-    res.cookie("user_id", newuser.id);
+    req.session.user_id = newuser;
     res.redirect("/urls");
   }
 });
 
 // GET Request -> to view login page if the user is not logged in
 app.get("/login", (req, res) => {
-  const user_id = req.cookies["user_id"];
+  const user_id = req.session.user_id;
   const templateVars = { user: users[user_id], errors: false };
   res.render("login_form", templateVars);
 });
@@ -250,23 +251,21 @@ app.post("/login", (req, res) => {
   const { email, password } = req.body;
   const userObject = getUserByEmail(email, users);
   if (!userObject) {
-    return res.send("e-mail cannot be found");
+    return res.status(403).send("e-mail cannot be found");
   } else if (!passwordMatchChecks(req.body.email, req.body.password)) {
-    return res.send("Your password doesn't match with your Id", 403);
+    return res.status(403).send("Your password doesn't match with your Id");
   } 
-    const user_id = userObject.id;
-    res.cookie("user_id", user_id);
+    req.session.user_id = userObject.id;
     res.redirect("/urls");
 });
 
 // POST Request -> to logout from the current user and clear all cookies
 app.post("/logout", (req, res) => {
-  const user_id = req.body.user_id;
-  res.clearCookie("user_id", user_id);
-  res.redirect("/urls");
+  req.session = null;
+  return res.redirect("/urls");
 });
 
-// GET Request -> for /urls.json page path
+// GET Request -> coverts URLDatabase to JSON
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
